@@ -19,7 +19,7 @@ API_HASH = os.environ.get("API_HASH", "d8ea0f3e56c55b8ef9c0e8cb39b9c857")
 
 # --- ADMIN & DATABASE ---
 ADMINS = int(os.environ.get("ADMINS", "6065778458"))
-DB_URI = os.environ.get("DB_URI", "")                 # MongoDB connection URI
+DB_URI = os.environ.get("DB_URI", "mybot.db")                 # MongoDB connection URI
 DB_NAME = os.environ.get("DB_NAME", "vjsavecontentbot")
 
 # --- ERROR LOGGING ---
