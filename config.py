@@ -15,8 +15,7 @@ STRING_SESSION = os.environ.get("STRING_SESSION", "")
 # --- TELEGRAM BOT CREDENTIALS ---
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8479055966:AAEgmGioIw9EHhO0Xo2E_97hOSMMmwY9D0w")
 API_ID = int(os.environ.get("API_ID", "28803298"))           # safer default
-API_HASH = os.environ.get("API_HASH", "d8ea0f3e56c55b8ef9c0e8cb39b9c857
-")
+API_HASH = os.environ.get("API_HASH", "d8ea0f3e56c55b8ef9c0e8cb39b9c857")
 
 # --- ADMIN & DATABASE ---
 ADMINS = int(os.environ.get("ADMINS", "6065778458"))
