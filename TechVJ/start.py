@@ -4,6 +4,26 @@
 # Ask Doubt on telegram @KingVJ01
 
 import os
+import time
+
+# 🕒 UPTIME START TIME
+START_TIME = time.time()
+
+# 🕒 Function to calculate uptime
+def get_uptime():
+    seconds = int(time.time() - START_TIME)
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    parts = []
+    if days > 0:
+        parts.append(f"{days}d")
+    if hours > 0:
+        parts.append(f"{hours}h")
+    if minutes > 0:
+        parts.append(f"{minutes}m")
+    parts.append(f"{seconds}s")
+    return " ".join(parts)
 import asyncio
 import pyrogram
 from pyrogram import Client, filters, enums
@@ -364,3 +384,17 @@ def get_message_type(msg: pyrogram.types.messages_and_media.message.Message):
         return "Text"
     except Exception:
         pass
+# ⚡ /ping command
+@Client.on_message(filters.command(["ping"]))
+async def ping_cmd(client, message):
+    start = time.time()
+    m = await message.reply_text("🏓 Pinging...")
+    end = time.time()
+    uptime = get_uptime()
+    await m.edit_text(f"🏓 Pong!\n⏱️ Ping: {round((end - start) * 1000)} ms\n🕒 Uptime: {uptime}")
+
+# 🕒 /uptime command
+@Client.on_message(filters.command(["uptime"]))
+async def uptime_cmd(client, message):
+    uptime = get_uptime()
+    await message.reply_text(f"🕒 Uptime: {uptime}")
