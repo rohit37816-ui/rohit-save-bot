@@ -4,6 +4,8 @@
 # Ask Doubt on telegram @KingVJ01
 
 import os
+import time
+START_TIME = time.time()
 from pyrogram import Client
 from config import API_ID, API_HASH, BOT_TOKEN
 
