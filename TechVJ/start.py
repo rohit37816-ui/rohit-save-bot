@@ -2,29 +2,9 @@
 # Don't Remove Credit Tg - @VJ_Botz
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@Tech_VJ
 # Ask Doubt on telegram @KingVJ01
+
 import os
 import time
-from pyrogram import Client, filters
-
-
-# 🕒 UPTIME START TIME
-START_TIME = time.time()
-
-# 🕒 Function to calculate uptime
-def get_uptime():
-    seconds = int(time.time() - START_TIME)
-    days, seconds = divmod(seconds, 86400)
-    hours, seconds = divmod(seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
-    parts = []
-    if days > 0:
-        parts.append(f"{days}d")
-    if hours > 0:
-        parts.append(f"{hours}h")
-    if minutes > 0:
-        parts.append(f"{minutes}m")
-    parts.append(f"{seconds}s")
-    return " ".join(parts)
 import asyncio
 import pyrogram
 from pyrogram import Client, filters, enums
@@ -38,12 +18,27 @@ from database.db import db
 from TechVJ.strings import HELP_TXT
 from user_client import TechVJUser
 
-# Tunables via env (optional)
-RATE_DELAY = float(os.environ.get("RATE_DELAY", "0.4"))            # delay after every API call
-WAIT_BETWEEN_MSGS = float(os.environ.get("WAIT_BETWEEN_MSGS", "2.0"))  # batch pacing
+# ================= UPTIME SETUP =================
+START_TIME = time.time()
+
+def get_uptime():
+    seconds = int(time.time() - START_TIME)
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    parts = []
+    if days > 0: parts.append(f"{days}d")
+    if hours > 0: parts.append(f"{hours}h")
+    if minutes > 0: parts.append(f"{minutes}m")
+    parts.append(f"{seconds}s")
+    return " ".join(parts)
+
+# ================= BASE CODE =================
+RATE_DELAY = float(os.environ.get("RATE_DELAY", "0.4"))
+WAIT_BETWEEN_MSGS = float(os.environ.get("WAIT_BETWEEN_MSGS", "2.0"))
 
 class batch_temp:
-    IS_BATCH = {}  # key per-user (PM) ya per-user (group), fallback chat id
+    IS_BATCH = {}
 
 async def safe_send(awaitable):
     while True:
@@ -84,7 +79,6 @@ def progress(current, total, message, type_):
 
 @Client.on_message(filters.command(["start"]))
 async def send_start(client: Client, message: Message):
-    # Group me /start aaye to bhi silent info ok
     if message.from_user:
         if not await db.is_user_exist(message.from_user.id):
             await db.add_user(message.from_user.id, message.from_user.first_name)
@@ -119,24 +113,19 @@ async def send_cancel(client: Client, message: Message):
     batch_temp.IS_BATCH[user_key] = True
     await safe_send(client.send_message(chat_id=message.chat.id, text="**Batch Successfully Cancelled.**"))
 
-# Group support: private OR group dono me chale
+# ==================== BATCH / SAVE HANDLING ====================
 @Client.on_message(filters.text & (filters.private | filters.group))
 async def save(client: Client, message: Message):
-    # per-user batching key (group me bhi user-wise)
     sender_id = message.from_user.id if message.from_user else None
     user_key = sender_id if sender_id else message.chat.id
 
-    # Anonymous admin case
     if not sender_id and message.chat.type in ("group", "supergroup"):
-        # Ya to /save <link> use karen from user account OR PM me bhejein
         if "https://t.me/" in (message.text or ""):
             return await safe_send(message.reply("Anonymous admin se links process nahi ho sakte. Apne user account se bhejein ya PM me bhejein."))
-        # warna ignore
         return
 
     text = message.text or ""
 
-    # Global string-session user se join (sirf LOGIN_SYSTEM False hone par)
     if (("https://t.me/+" in text) or ("https://t.me/joinchat/" in text)) and LOGIN_SYSTEM is False:
         if TechVJUser is None:
             await safe_send(client.send_message(message.chat.id, "**String Session is not Set**", reply_to_message_id=message.id))
@@ -152,7 +141,6 @@ async def save(client: Client, message: Message):
             await safe_send(client.send_message(message.chat.id, f"**Error** : __{e}__", reply_to_message_id=message.id))
         return
 
-    # Only handle t.me links
     if "https://t.me/" not in text:
         return
 
@@ -175,7 +163,6 @@ async def save(client: Client, message: Message):
         if batch_temp.IS_BATCH.get(user_key):
             break
 
-        # Choose which account fetches the restricted message
         if LOGIN_SYSTEM is True:
             user_data = await db.get_session(sender_id)
             if user_data is None:
@@ -195,7 +182,7 @@ async def save(client: Client, message: Message):
                 return
             acc = TechVJUser
 
-        # private (/c/) or bot (/b/) or public
+        # ================= MESSAGE FETCH LOGIC =================
         if "https://t.me/c/" in text:
             chatid = int("-100" + datas[4])
             try:
@@ -203,7 +190,6 @@ async def save(client: Client, message: Message):
             except Exception as e:
                 if ERROR_MESSAGE is True:
                     await safe_send(client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id))
-
         elif "https://t.me/b/" in text:
             username = datas[4]
             try:
@@ -211,11 +197,10 @@ async def save(client: Client, message: Message):
             except Exception as e:
                 if ERROR_MESSAGE is True:
                     await safe_send(client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id))
-
         else:
             username = datas[3]
             try:
-                msg = await client.get_messages(username, msgid)  # get_messages rate-limits are lenient
+                msg = await client.get_messages(username, msgid)
             except UsernameNotOccupied:
                 await safe_send(client.send_message(message.chat.id, "The username is not occupied by anyone", reply_to_message_id=message.id))
                 return
@@ -232,6 +217,7 @@ async def save(client: Client, message: Message):
 
     batch_temp.IS_BATCH[user_key] = True
 
+# ==================== PRIVATE HANDLER ====================
 async def handle_private(client: Client, acc, message: Message, chatid, msgid: int, user_key):
     msg: Message = await acc.get_messages(chatid, msgid)
     if msg.empty:
@@ -344,58 +330,4 @@ async def handle_private(client: Client, acc, message: Message, chatid, msgid: i
     except Exception:
         pass
 
-def get_message_type(msg: pyrogram.types.messages_and_media.message.Message):
-    try:
-        msg.document.file_id
-        return "Document"
-    except Exception:
-        pass
-    try:
-        msg.video.file_id
-        return "Video"
-    except Exception:
-        pass
-    try:
-        msg.animation.file_id
-        return "Animation"
-    except Exception:
-        pass
-    try:
-        msg.sticker.file_id
-        return "Sticker"
-    except Exception:
-        pass
-    try:
-        msg.voice.file_id
-        return "Voice"
-    except Exception:
-        pass
-    try:
-        msg.audio.file_id
-        return "Audio"
-    except Exception:
-        pass
-    try:
-        msg.photo.file_id
-        return "Photo"
-    except Exception:
-        pass
-    try:
-        msg.text
-        return "Text"
-    except Exception:
-        pass
-# ⚡ /ping command
-@Client.on_message(filters.command(["ping"]))
-async def ping_cmd(client, message):
-    start = time.time()
-    m = await message.reply_text("🏓 Pinging...")
-    end = time.time()
-    uptime = get_uptime()
-    await m.edit_text(f"🏓 Pong!\n⏱️ Ping: {round((end - start) * 1000)} ms\n🕒 Uptime: {uptime}")
-
-# 🕒 /uptime command
-@Client.on_message(filters.command(["uptime"]))
-async def uptime_cmd(client, message):
-    uptime = get_uptime()
-    await message.reply_text(f"🕒 Uptime: {uptime}")
+def get
