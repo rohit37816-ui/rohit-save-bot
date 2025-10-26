@@ -6,16 +6,28 @@ TechVJUser = None
 
 async def ensure_user_client_started():
     global TechVJUser
-    if STRING_SESSION and (LOGIN_SYSTEM is False):
-        if TechVJUser is None:
-            TechVJUser = Client(
-                "TechVJUser",
-                api_id=API_ID,
-                api_hash=API_HASH,
-                session_string=STRING_SESSION
-            )
+
+    # Skip if no string session or login system enabled
+    if not STRING_SESSION or LOGIN_SYSTEM:
+        return None
+
+    # Initialize client if not created yet
+    if TechVJUser is None:
+        TechVJUser = Client(
+            "TechVJUser",
+            api_id=API_ID,
+            api_hash=API_HASH,
+            session_string=STRING_SESSION
+        )
+
+    # Ensure client is started before returning
+    if not TechVJUser.is_connected:
         try:
             await TechVJUser.start()
-        except Exception:
-            # Already running or start race; ignore
-            pass
+            print("✅ User client started successfully.")
+        except Exception as e:
+            print(f"⚠️ Failed to start user client: {e}")
+            TechVJUser = None
+            return None
+
+    return TechVJUser
