@@ -21,13 +21,13 @@ async def ensure_user_client_started():
         )
 
     # Ensure client is started before returning
-    if not TechVJUser.is_connected:
-        try:
+    try:
+        if not TechVJUser.is_connected:
             await TechVJUser.start()
-            print("✅ User client started successfully.")
-        except Exception as e:
-            print(f"⚠️ Failed to start user client: {e}")
-            TechVJUser = None
-            return None
+            print("✅ TechVJUser started successfully!")  # Success message
+    except Exception as e:
+        print(f"❌ TechVJUser failed to start: {e}")  # Error message
+        TechVJUser = None
+        return None
 
     return TechVJUser
